@@ -9,8 +9,12 @@ pipeline {
                     reuseNode true
                 }
             }
+            pre {
+                success{
+                    cleanWs()
+                }
+            }
             steps {
-                cleanWs()
                 sh '''
                 ls -ltr
                 node --version
