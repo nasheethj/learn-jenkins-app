@@ -25,7 +25,7 @@ pipeline {
                 echo "Test Build"
                 pwd
                 ls -ltra
-                cd buiid
+                cd build
                 cat index.html
                 run npm test
                 '''
