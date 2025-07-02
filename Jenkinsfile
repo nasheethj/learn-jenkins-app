@@ -27,7 +27,7 @@ pipeline {
                 ls -ltra
                 cd build
                 cat index.html
-                run npm test
+                npm test
                 '''
             }
         }
