@@ -2,6 +2,12 @@ pipeline {
     agent any
 
     stages {
+        stage('Clean') {
+            steps {
+                echo "Inside Stage Clean WS"
+                cleanWs()
+            }
+        }
         stage('Build') {
             agent {
                 docker {
