@@ -10,6 +10,7 @@ pipeline {
                 }
             }
             steps {
+                cleanWs()
                 sh '''
                 ls -ltr
                 node --version
@@ -23,6 +24,8 @@ pipeline {
             steps {
                 sh '''
                 echo "Test Build"
+                pwd
+                ls -ltra
                 cd buiid
                 cat index.html
                 run npm test
