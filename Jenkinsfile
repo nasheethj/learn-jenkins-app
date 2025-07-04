@@ -42,24 +42,36 @@ pipeline {
         //         '''
         //     }
         // }
-        // stage('E2E') {
-        //     agent {
-        //         docker {
-        //             image 'mcr.microsoft.com/playwright:v1.53.0-noble'
-        //             reuseNode true
-        //         }
-        //     }
-        //     steps {
-        //         sh '''
-        //         echo "E2E Test"
-        //         npm install serve
-        //         node_modules/.bin/serve -s build &
-        //         sleep 10
-        //         npx playwright install
-        //         npx playwright test
-        //         '''
-        //     }
-        // }
+        stage('PROD E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.53.0-noble'
+                    reuseNode true
+                }
+            }
+            environment {
+                CI_ENVIRONMENT_URL = 'https://scintillating-sunshine-d52894.netlify.app'
+            }
+            steps {
+                sh '''
+                # echo "E2E Test"
+                # npm install serve
+                # node_modules/.bin/serve -s build &
+                # sleep 10
+                # npx playwright install
+                # npx playwright test
+
+                echo "PROD Test"
+                npx playwright install
+                npx playwright test --reported=html
+                '''
+            }
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Prod Report', reportTitles: '', useWrapperFileDirectly: true])
+                }
+            }
+        }
         stage('Deploy') {
             agent {
                 docker {
