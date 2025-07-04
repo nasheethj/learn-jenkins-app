@@ -43,12 +43,12 @@ pipeline {
                         npm test
                         '''
                     }
-                post {
-                    always {
-                        junit 'jest-results/junit.xml'
+                    post {
+                        always {
+                            junit 'jest-results/junit.xml'
+                            }
                         }
                     }
-                }
                 stage('LOCAL E2E') {
                     agent {
                         docker {
@@ -74,6 +74,22 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                npm install netlify-cli@20.1.1
+                node_modules/.bin/netlify --version
+                node_modules/.bin/netlify status
+                node_modules/.bin/netlify deploy --dir=build --prod
+                '''
+            }
+        }
         stage('PROD E2E') {
             agent {
                 docker {
@@ -95,22 +111,6 @@ pipeline {
                 always {
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Prod Report', reportTitles: '', useWrapperFileDirectly: true])
                 }
-            }
-        }
-        stage('Deploy') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                npm install netlify-cli@20.1.1
-                node_modules/.bin/netlify --version
-                node_modules/.bin/netlify status
-                node_modules/.bin/netlify deploy --dir=build --prod
-                '''
             }
         }
     }
