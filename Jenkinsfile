@@ -56,7 +56,7 @@ pipeline {
                 sh '''
                 echo "PROD Test"
                 npx playwright install
-                npx playwright test --reported=html
+                npx playwright test --reporter=html
                 '''
             }
             post {
@@ -79,7 +79,7 @@ pipeline {
                 node_modules/.bin/serve -s build &
                 sleep 10
                 npx playwright install
-                npx playwright test
+                npx playwright test --reporter=html
                 '''
             }
             post {
