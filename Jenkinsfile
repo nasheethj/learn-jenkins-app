@@ -24,24 +24,56 @@ pipeline {
                 '''
             }
         }
-        // stage('Test') {
-        //     agent {
-        //         docker {
-        //             image 'node:18-alpine'
-        //             reuseNode true
-        //         }
-        //     }
-        //     steps {
-        //         sh '''
-        //         echo "Test Build"
-        //         pwd
-        //         ls -ltra
-        //         cd build
-        //         cat index.html
-        //         npm test
-        //         '''
-        //     }
-        // }
+        stage ('Tests') {
+            parallel {
+                stage('Test') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                        echo "Test Build"
+                        pwd
+                        ls -ltra
+                        cd build
+                        cat index.html
+                        npm test
+                        '''
+                    }
+                post {
+                    always {
+                        junit 'jest-results/junit.xml'
+                        }
+                    }
+                }
+                stage('LOCAL E2E') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.53.0-noble'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                        echo "E2E Test"
+                        npm install serve
+                        node_modules/.bin/serve -s build &
+                        sleep 10
+                        npx playwright install
+                        npx playwright test --reporter=html
+                        '''
+                    }
+                    post {
+                        always {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local Report', reportTitles: '', useWrapperFileDirectly: true])
+                        }
+                    }
+                }
+            }
+        }
         stage('PROD E2E') {
             agent {
                 docker {
@@ -65,29 +97,6 @@ pipeline {
                 }
             }
         }
-        stage('LOCAL E2E') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.53.0-noble'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                echo "E2E Test"
-                npm install serve
-                node_modules/.bin/serve -s build &
-                sleep 10
-                npx playwright install
-                npx playwright test --reporter=html
-                '''
-            }
-            post {
-                always {
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local Report', reportTitles: '', useWrapperFileDirectly: true])
-                }
-            }
-        }
         stage('Deploy') {
             agent {
                 docker {
@@ -103,12 +112,6 @@ pipeline {
                 node_modules/.bin/netlify deploy --dir=build --prod
                 '''
             }
-        }
-    }
-    
-    post {
-        always {
-            junit 'jest-results/junit.xml'
         }
     }
 }
