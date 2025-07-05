@@ -73,7 +73,11 @@ pipeline {
                     }
                 }*/
                 stage('LOCAL E2E') {
-                    agent any
+                    agent {
+                        docker {
+                            reuseNode true
+                        }
+                    }
                     steps {
                         sh '''
                             echo "Starting Playwright container"
