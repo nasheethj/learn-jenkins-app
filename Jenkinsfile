@@ -63,7 +63,7 @@ pipeline {
                         npm install serve
                         node_modules/.bin/serve -s build &
                         sleep 10
-                        npx playwright install
+                        npx playwright install chromium
                         npx playwright test --reporter=html
                         '''
                     }
@@ -110,7 +110,7 @@ pipeline {
             steps {
                 sh '''
                 echo "PROD Testing"
-                npx playwright install
+                npx playwright install chromium
                 npx playwright test --reporter=html
                 '''
             }
@@ -156,7 +156,7 @@ pipeline {
             steps {
                 sh '''
                 echo "PROD Testing"
-                npx playwright install
+                npx playwright install chromium
                 npx playwright test --reporter=html
                 '''
             }
