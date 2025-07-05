@@ -103,6 +103,7 @@ pipeline {
             steps {
                 sh '''
                 echo "PROD Testing"
+                npx playwright install
                 npx playwright test --reporter=html
                 '''
             }
