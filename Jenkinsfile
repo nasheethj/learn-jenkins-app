@@ -9,32 +9,33 @@ pipeline {
     stages {
         stage('LOCAL E2E') {
             agent {
-                docker {
-                    image 'node:18-alpine'
-                    image 'mcr.microsoft.com/playwright:v1.53.0-noble'
-                    reuseNode true
+                    docker {
+                        image 'node:18-alpine'
+                        reuseNode true
+                    }
                 }
-            }
             steps {
                 sh '''
-                    echo "Installing dependencies and starting React app"
+                    echo "Starting Playwright container"
 
-                    npm ci
-                    npm install serve
+                    # Stop and remove any existing container with the same name
+                    docker rm -f playwright-e2e || true
 
-                    echo "Building React app"
-                    npm run build
-
-                    echo "Serving React app on http://localhost:5000"
-                    npx serve -s build -l 5000 --listen 0.0.0.0 &
-                    sleep 10
-
-                    echo "Waiting for the app to be available..."
-                    npx wait-on http://localhost:5000
-
-                    echo "Running Playwright tests"
-                    npx playwright install
-                    npx playwright test --reporter=html
+                    # Run the Playwright container with port 5000 exposed
+                    docker run -d --name playwright-e2e \
+                        -p 5000:5000 \
+                        -v "$PWD":/workspace \
+                        -w /workspace \
+                        mcr.microsoft.com/playwright:v1.53.0-noble \
+                        sh -c "
+                            npm ci && \
+                            npm install serve && \
+                            npm run build && \
+                            npx serve -s build -l 5000 --listen 0.0.0.0 & \
+                            sleep 10 && \
+                            npx playwright install && \
+                            npx playwright test --reporter=html
+                        "
                 '''
             }
             post {
