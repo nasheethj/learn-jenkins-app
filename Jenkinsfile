@@ -49,7 +49,7 @@ pipeline {
                             }
                         }
                     }
-                stage('LOCAL E2E') {
+                /*stage('LOCAL E2E') {
                     agent {
                         docker {
                             image 'mcr.microsoft.com/playwright:v1.53.0-noble'
@@ -60,7 +60,7 @@ pipeline {
                         sh '''
                         echo "E2E Test"
                         npm install serve
-                        node_modules/.bin/serve -s build -l 5000 &
+                        node_modules/.bin/serve -s build -l 5000 --listen 0.0.0.0 &
                         sleep 10
                         npx playwright install
                         npx playwright test --reporter=html
@@ -69,6 +69,47 @@ pipeline {
                     post {
                         always {
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local Report', reportTitles: '', useWrapperFileDirectly: true])
+                        }
+                    }
+                }*/
+                stage('LOCAL E2E') {
+                    agent any
+                    steps {
+                        sh '''
+                            echo "Starting Playwright container"
+
+                            # Stop and remove any existing container with the same name
+                            docker rm -f playwright-e2e || true
+
+                            # Run the Playwright container with port 5000 exposed
+                            docker run -d --name playwright-e2e \
+                                -p 5000:5000 \
+                                -v "$PWD":/workspace \
+                                -w /workspace \
+                                mcr.microsoft.com/playwright:v1.53.0-noble \
+                                sh -c "
+                                    npm ci && \
+                                    npm install serve && \
+                                    npm run build && \
+                                    npx serve -s build -l 5000 --listen 0.0.0.0 & \
+                                    sleep 10 && \
+                                    npx playwright install && \
+                                    npx playwright test --reporter=html
+                                "
+                        '''
+                    }
+                    post {
+                        always {
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: false,
+                                keepAll: false,
+                                reportDir: 'playwright-report',
+                                reportFiles: 'index.html',
+                                reportName: 'Playwright Local Report',
+                                reportTitles: '',
+                                useWrapperFileDirectly: true
+                            ])
                         }
                     }
                 }
