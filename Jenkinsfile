@@ -74,7 +74,52 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+        stage('Deploy Staging') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                npm install netlify-cli@20.1.1 node-jq
+                node_modules/.bin/netlify --version
+                node_modules/.bin/netlify status
+                node_modules/.bin/netlify deploy --dir=build --json > json_output.txt
+                jq -r '.deploy_url' json_output.txt > deploy_id.txt
+                '''
+                script {
+                    def deployUrl = readFile('deploy_id.txt').trim()
+                    echo "Staging Deployment URL: ${deployUrl}"
+                    env.STAGING_URL = deployUrl
+                }
+            }
+        }
+        stage('Staging E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.53.0-noble'
+                    reuseNode true
+                }
+            }
+            environment {
+                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
+            }
+            steps {
+                sh '''
+                echo "PROD Testing"
+                npx playwright install
+                npx playwright test --reporter=html
+                '''
+            }
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Prod Report', reportTitles: '', useWrapperFileDirectly: true])
+                }
+            }
+        }
+        stage('Deploy PROD') {
             agent {
                 docker {
                     image 'node:18-alpine'
