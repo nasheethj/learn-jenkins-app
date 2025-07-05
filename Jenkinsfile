@@ -7,110 +7,49 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                ls -ltr
-                node --version
-                npm --version
-                npm ci
-                npm run build
-                '''
-            }
-        }
-        stage ('Tests') {
-            parallel {
-                stage('Test') {
-                    agent {
-                        docker {
-                            image 'node:18-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh '''
-                        echo "Test Build"
-                        pwd
-                        ls -ltra
-                        cd build
-                        cat index.html
-                        npm test
-                        '''
-                    }
-                    post {
-                        always {
-                            junit 'jest-results/junit.xml'
-                            }
-                        }
-                    }
-                stage('LOCAL E2E') {
-                    agent {
-                        docker {
-                            image 'mcr.microsoft.com/playwright:v1.53.0-noble'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh '''
-                        echo "E2E Test"
-                        npm install serve
-                        node_modules/.bin/serve -s build &
-                        sleep 10
-                        npx playwright install
-                        npx playwright test --reporter=html
-                        '''
-                    }
-                    post {
-                        always {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local Report', reportTitles: '', useWrapperFileDirectly: true])
-                        }
-                    }
-                }
-            }
-        }
-        /*stage('Deploy') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                npm install netlify-cli@20.1.1
-                node_modules/.bin/netlify --version
-                node_modules/.bin/netlify status
-                node_modules/.bin/netlify deploy --dir=build --prod
-                '''
-            }
-        }
-        stage('PROD E2E') {
+        stage('LOCAL E2E') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.53.0-noble'
                     reuseNode true
                 }
             }
-            environment {
-                CI_ENVIRONMENT_URL = 'https://scintillating-sunshine-d52894.netlify.app'
-            }
             steps {
                 sh '''
-                echo "PROD Testing"
-                npx playwright test --reporter=html
+                    echo "Installing dependencies and starting React app"
+
+                    npm ci
+                    npm install serve
+
+                    echo "Building React app"
+                    npm run build
+
+                    echo "Serving React app on http://localhost:5000"
+                    npx serve -s build -l 5000 --listen 0.0.0.0 &
+                    sleep 10
+
+                    echo "Waiting for the app to be available..."
+                    npx wait-on http://localhost:5000
+
+                    echo "Running Playwright tests"
+                    npx playwright install
+                    npx playwright test --reporter=html
                 '''
             }
             post {
                 always {
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Prod Report', reportTitles: '', useWrapperFileDirectly: true])
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: false,
+                        reportDir: 'playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Playwright Local Report',
+                        reportTitles: '',
+                        useWrapperFileDirectly: true
+                    ])
                 }
             }
-        }*/
+        }
     }
 }
