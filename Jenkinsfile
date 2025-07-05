@@ -10,6 +10,7 @@ pipeline {
         stage('LOCAL E2E') {
             agent {
                 docker {
+                    image 'node:18-alpine'
                     image 'mcr.microsoft.com/playwright:v1.53.0-noble'
                     reuseNode true
                 }
