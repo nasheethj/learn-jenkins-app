@@ -23,8 +23,6 @@ test('has expected app version', async ({ page }) => {
   console.log('Looking for version:', expectedAppVersion);
   await page.screenshot({ path: 'debug.png' });
 
-
-
   const isVisible = await page.locator(`p:has-text("Application version: ${expectedAppVersion}")`).isVisible();
   expect(isVisible).toBeTruthy();
 });
