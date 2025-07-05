@@ -60,7 +60,7 @@ pipeline {
                         sh '''
                         echo "E2E Test"
                         npm install serve
-                        node_modules/.bin/serve -s build
+                        node_modules/.bin/serve -s build -l 5000 &
                         sleep 10
                         npx playwright install
                         npx playwright test --reporter=html
