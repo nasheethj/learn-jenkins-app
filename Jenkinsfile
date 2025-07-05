@@ -87,12 +87,12 @@ pipeline {
                 node_modules/.bin/netlify --version
                 node_modules/.bin/netlify status
                 node_modules/.bin/netlify deploy --dir=build --json > json_output.txt
-                jq -r '.deploy_url' json_output.txt > deploy_id.txt
+                node_modules/.bin/node-jq -r '.deploy_url' json_output.txt > deploy_id.txt
                 '''
                 script {
                     def deployUrl = readFile('deploy_id.txt').trim()
                     echo "Staging Deployment URL: ${deployUrl}"
-                    env.STAGING_URL = deployUrl
+                    env.STAGING_URL = sh(script: 'cat deploy_id.txt', returnStdout: true).trim()
                 }
             }
         }
